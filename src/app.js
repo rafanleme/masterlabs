@@ -6,6 +6,8 @@ const correlationId = require('./middlewares/correlationId');
 const httpLogger = require('./middlewares/httpLogger');
 const errorHandler = require('./middlewares/errorHandler');
 const healthRouter = require('./health/healthRouter');
+const tenantRoutes = require('./modules/tenant/tenant.routes');
+const authRoutes = require('./modules/auth/auth.routes');
 const config = require('./config');
 
 const app = express();
@@ -31,6 +33,8 @@ if (config.env !== 'production') {
 }
 
 app.use(healthRouter);
+app.use('/api/v1/tenants', tenantRoutes);
+app.use('/api/v1/auth', authRoutes);
 
 app.use(errorHandler);
 

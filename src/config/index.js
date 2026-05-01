@@ -12,4 +12,8 @@ module.exports = {
     user: process.env.MYSQL_USER || process.env.DATABASE_USER,
     password: process.env.MYSQL_PASSWORD || process.env.DATABASE_PASSWORD,
   },
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  },
 };
