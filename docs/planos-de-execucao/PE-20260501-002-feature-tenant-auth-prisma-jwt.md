@@ -15,25 +15,25 @@ Implementar o alicerce do sistema multi-tenant:
 ## 📊 Acompanhamento de Progresso
 
 ### Status Geral
-- **Progresso**: 0/9 etapas concluídas (0%)
-- **Status**: 🔵 Em Andamento
+- **Progresso**: 9/9 etapas concluídas (100%)
+- **Status**: 🟢 Concluída
 - **Data de Início**: 2026-05-01
-- **Data de Conclusão**: ___________
+- **Data de Conclusão**: 2026-05-01
 - **Responsável**: Equipe de Desenvolvimento
 
 ### Status das Etapas
 
 | Etapa | Descrição | Status | Data Início | Data Fim | Observações |
 |-------|-----------|--------|-------------|----------|-------------|
-| E01 | Instalação de dependências | ⏳ Pendente | | | prisma, zod, bcrypt, jsonwebtoken |
-| E02 | Prisma init + schema (Tenant, User, Role) | ⏳ Pendente | | | |
-| E03 | Migration + config (DATABASE_URL, JWT) | ⏳ Pendente | | | |
-| E04 | Infra: prisma.js, validate.js, authenticate.js | ⏳ Pendente | | | |
-| E05 | Módulo Tenant (register) | ⏳ Pendente | | | POST /api/v1/tenants/register |
-| E06 | Módulo Auth (login + me) | ⏳ Pendente | | | POST /api/v1/auth/login, GET /api/v1/auth/me |
-| E07 | Registro das rotas em app.js | ⏳ Pendente | | | |
-| E08 | Testes manuais (register, login, me, erros) | ⏳ Pendente | | | |
-| E09 | Deploy stage (commit + push + Config Vars + migration) | ⏳ Pendente | | | |
+| E01 | Instalação de dependências | 🟢 Concluída | 2026-05-01 | 2026-05-01 | prisma@5, zod, bcrypt, jsonwebtoken instalados |
+| E02 | Prisma init + schema (Tenant, User, Role) | 🟢 Concluída | 2026-05-01 | 2026-05-01 | Prisma v5 (v7 incompatível com CommonJS) |
+| E03 | Migration + config (DATABASE_URL, JWT) | 🟢 Concluída | 2026-05-01 | 2026-05-01 | Migration init-tenant-auth aplicada |
+| E04 | Infra: prisma.js, validate.js, authenticate.js | 🟢 Concluída | 2026-05-01 | 2026-05-01 | |
+| E05 | Módulo Tenant (register) | 🟢 Concluída | 2026-05-01 | 2026-05-01 | POST /api/v1/tenants/register |
+| E06 | Módulo Auth (login + me) | 🟢 Concluída | 2026-05-01 | 2026-05-01 | POST /api/v1/auth/login, GET /api/v1/auth/me |
+| E07 | Registro das rotas em app.js | 🟢 Concluída | 2026-05-01 | 2026-05-01 | |
+| E08 | Testes manuais (register, login, me, erros) | 🟢 Concluída | 2026-05-01 | 2026-05-01 | Todos os cenários validados |
+| E09 | Deploy stage + prod (commit + push + Config Vars + migration) | 🟢 Concluída | 2026-05-01 | 2026-05-01 | Stage e prod validados |
 
 ### Legenda de Status
 - 🟡 **Aguardando**: Etapa não iniciada
@@ -54,6 +54,8 @@ npm install @prisma/client zod bcrypt jsonwebtoken
 npm install -D prisma
 ```
 
+> **Nota**: Prisma v7 (latest) é incompatível com projetos CommonJS — usa ESM e exige driver adapter. Fixado em v5.
+
 ---
 
 ### E02 — Prisma init + Schema
@@ -71,7 +73,7 @@ npx prisma init
 
 ### E03 — Migration + Config
 
-- Adicionar `DATABASE_URL` ao `.env.development`
+- Adicionar `DATABASE_URL` ao `.env` (Prisma CLI) e `.env.development` (runtime)
 - Adicionar `JWT_SECRET` e `JWT_EXPIRES_IN` ao `.env.development`
 - Atualizar `src/config/index.js` com bloco `jwt`
 - Rodar: `npx prisma migrate dev --name init-tenant-auth`
@@ -121,7 +123,7 @@ Retorna dados do usuário do `req.user`.
 
 ### E07 — Registro das rotas
 
-Atualizar `src/app.js`:
+Atualizado `src/app.js`:
 ```js
 app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/v1/auth',    authRoutes);
@@ -131,30 +133,28 @@ app.use('/api/v1/auth',    authRoutes);
 
 ### E08 — Testes manuais
 
-```bash
-# Register
-curl -X POST http://localhost:3000/api/v1/tenants/register -H "Content-Type: application/json" \
-  -d '{"razaoSocial":"Lab Teste","nomeFantasia":"Lab","cnpj":"12345678000195","email":"lab@teste.com","adminName":"Admin","adminEmail":"admin@teste.com","adminPassword":"senha1234"}'
-
-# Login
-curl -X POST http://localhost:3000/api/v1/auth/login -H "Content-Type: application/json" \
-  -d '{"email":"admin@teste.com","password":"senha1234"}'
-
-# Me
-curl http://localhost:3000/api/v1/auth/me -H "Authorization: Bearer <token>"
-```
-
-Cenários de erro: CNPJ duplicado → 409 | Senha errada → 401 | Token ausente → 401 | Body inválido → 400
+Todos os cenários validados localmente:
+- Register → 201 com tenant + JWT ✅
+- Login → 200 com token + user ✅
+- Me → 200 com dados do usuário ✅
+- CNPJ duplicado → 409 ✅
+- Senha errada → 401 genérico ✅
+- Token ausente → 401 ✅
+- Body inválido → 400 com erros por campo ✅
 
 ---
 
-### E09 — Deploy Stage
+### E09 — Deploy Stage + Prod
 
-1. `git add . && git commit -m "feat: E01-E08 - Tenant + Auth (Prisma + JWT)"`
-2. `git push origin develop`
-3. Setar Config Vars no Heroku stage: `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`
-4. `heroku run npx prisma migrate deploy -a masterlabs-api-stage`
-5. Validar endpoints em produção
+**Stage** (`masterlabs-api-stage`):
+- Config Vars: `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN` ✅
+- Migration aplicada: `npx prisma migrate deploy` ✅
+- Endpoints validados em `masterlabs-api-stage-c4083c2d2c34.herokuapp.com` ✅
+
+**Prod** (`masterlabs-api-prod`):
+- Config Vars: `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN` ✅
+- Migration aplicada: `npx prisma migrate deploy` ✅
+- Endpoints validados em `masterlabs-api-prod-c626b104c95e.herokuapp.com` ✅
 
 ---
 
@@ -168,17 +168,20 @@ Cenários de erro: CNPJ duplicado → 409 | Senha errada → 401 | Token ausente
 
 ## Critérios de Aceite
 
-- [ ] `POST /api/v1/tenants/register` cria Tenant + User Admin e retorna JWT
-- [ ] `POST /api/v1/auth/login` autentica e retorna JWT
-- [ ] `GET /api/v1/auth/me` retorna dados do usuário logado
-- [ ] CNPJ duplicado retorna 409
-- [ ] Senha errada retorna 401 sem expor qual campo falhou
-- [ ] Token ausente/inválido retorna 401
-- [ ] Body inválido retorna 400 com erros por campo
-- [ ] Deploy funcionando no stage com migration aplicada
+- [x] `POST /api/v1/tenants/register` cria Tenant + User Admin e retorna JWT
+- [x] `POST /api/v1/auth/login` autentica e retorna JWT
+- [x] `GET /api/v1/auth/me` retorna dados do usuário logado
+- [x] CNPJ duplicado retorna 409
+- [x] Senha errada retorna 401 sem expor qual campo falhou
+- [x] Token ausente/inválido retorna 401
+- [x] Body inválido retorna 400 com erros por campo
+- [x] Deploy funcionando no stage com migration aplicada
+- [x] Deploy funcionando no prod com migration aplicada
 
 ## 📝 Log de Atualizações
 
 | Data | Etapa | Status Anterior | Status Novo | Observações |
 |------|-------|-----------------|-------------|-------------|
 | 2026-05-01 | — | — | 🔵 Em Andamento | Plano criado |
+| 2026-05-01 | E01–E08 | ⏳ Pendente | 🟢 Concluída | Implementação completa e testes locais |
+| 2026-05-01 | E09 | ⏳ Pendente | 🟢 Concluída | Deploy stage + prod + migrations aplicadas |
