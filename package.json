@@ -5,7 +5,13 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "jest --runInBand --forceExit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/integration/**/*.test.js"],
+    "setupFiles": ["./tests/setup.js"]
   },
   "engines": {
     "node": "20.x"
@@ -24,6 +30,8 @@
     "zod": "^4.4.1"
   },
   "devDependencies": {
-    "prisma": "^5.22.0"
+    "jest": "^30.3.0",
+    "prisma": "^5.22.0",
+    "supertest": "^7.2.2"
   }
 }

@@ -18,6 +18,7 @@ model Tenant {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   users        User[]
+  clients      Client[]
 }
 
 model User {
@@ -39,4 +40,28 @@ enum Role {
   ADMIN
   ANALYST
   VIEWER
+}
+
+enum TipoPessoa {
+  PF
+  PJ
+}
+
+model Client {
+  id         String     @id @default(cuid())
+  tenantId   String
+  tipoPessoa TipoPessoa
+  nome       String
+  documento  String
+  email      String?
+  telefone   String?
+  endereco   String?
+  deletedAt  DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, documento])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
 }
