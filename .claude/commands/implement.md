@@ -182,7 +182,41 @@ describe('<Domínio> — <Feature>', () => {
 
 ---
 
-### FASE 5 — Documentação de Contexto de Negócio
+### FASE 5 — Atualização da Collection Postman
+
+Verifique se a feature adicionou novos endpoints ou alterou contratos existentes. Se sim, atualize `postman/MasterLabs-API.postman_collection.json`.
+
+#### Regras para atualização da collection
+
+- **Novo módulo**: crie uma nova pasta (folder) com o nome do domínio dentro do array `item` da collection
+- **Novo endpoint**: adicione um novo request dentro da pasta do módulo correspondente
+- **Estrutura obrigatória de cada request**:
+  - `name`: `MÉTODO /caminho — descrição curta` (ex: `POST /clients — PF`)
+  - `request.url.raw`: sempre use `{{base_url}}/api/v1/...`
+  - `request.description`: descreva o endpoint + roles aceitas
+  - Endpoints públicos (sem auth): inclua `"auth": { "type": "noauth" }` no request
+  - Endpoints que criam recursos: adicione test script para salvar o ID em uma collection variable (ex: `{{clientId}}`, `{{sampleId}}`)
+  - Endpoints de login/register: adicione test script para salvar `{{token}}`
+- **Não remova** requests existentes — se um endpoint foi removido ou renomeado, atualize in-place
+- **Mantenha** a collection variable `{{token}}` como auth padrão (já configurada no nível da collection)
+
+#### Variáveis de collection a manter atualizadas
+
+| Variável | Preenchida por | Usada em |
+|----------|---------------|----------|
+| `token` | Login / Register | Todos os endpoints autenticados |
+| `clientId` | POST /clients | GET, PATCH, DELETE /clients/:id |
+
+Adicione novas variáveis conforme novos recursos forem criados (ex: `sampleId`, `reportId`).
+
+#### Quando NÃO atualizar
+
+- A feature não adicionou endpoints novos nem alterou contratos
+- Apenas mudanças internas de lógica sem impacto na API
+
+---
+
+### FASE 6 — Documentação de Contexto de Negócio
 
 Verifique se já existe documentação em `docs/context/` para o fluxo sendo implementado.
 
@@ -250,7 +284,7 @@ Verifique se já existe documentação em `docs/context/` para o fluxo sendo imp
 
 ---
 
-### FASE 6 — Relatório final
+### FASE 7 — Relatório final
 
 Ao concluir todas as fases, apresente um relatório curto:
 
@@ -269,6 +303,7 @@ Ao concluir todas as fases, apresente um relatório curto:
 ### Documentação
 - docs/plans/PLAN-<feature>.md
 - docs/context/<fluxo>.md (criado/atualizado)
+- postman/MasterLabs-API.postman_collection.json (atualizado / sem alterações necessárias)
 
 ### Próximos passos sugeridos
 - Rode os testes: `npm test`

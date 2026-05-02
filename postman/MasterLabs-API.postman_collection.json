@@ -1,0 +1,315 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "MasterLabs API",
+    "description": "Collection completa da MasterLabs API — SaaS multi-tenant de laudos laboratoriais.\n\n**Como usar:**\n1. Selecione o environment desejado (Local / Stage / Prod)\n2. Execute **Auth > Register Tenant** ou **Auth > Login** — o token é salvo automaticamente\n3. A partir daí todos os endpoints autenticados funcionam sem configuração manual",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token — preenchido automaticamente pelo Login ou Register"
+    },
+    {
+      "key": "clientId",
+      "value": "",
+      "type": "string",
+      "description": "ID do último cliente criado — preenchido automaticamente pelo POST /clients"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /healthz",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/healthz",
+              "host": ["{{base_url}}"],
+              "path": ["healthz"]
+            },
+            "description": "Healthcheck geral da API. Retorna 200 se o servidor está up."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /healthz/db",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/healthz/db",
+              "host": ["{{base_url}}"],
+              "path": ["healthz", "db"]
+            },
+            "description": "Healthcheck do banco MySQL. Retorna 200 se a conexão está ativa."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tenants",
+      "item": [
+        {
+          "name": "POST /tenants/register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const res = pm.response.json();",
+                  "    if (res.token) {",
+                  "        pm.collectionVariables.set('token', res.token);",
+                  "        console.log('Token salvo automaticamente');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razaoSocial\": \"Laboratório Exemplo S/A\",\n  \"nomeFantasia\": \"Lab Exemplo\",\n  \"cnpj\": \"12345678000195\",\n  \"email\": \"lab@exemplo.com\",\n  \"telefone\": \"11999990000\",\n  \"endereco\": \"Rua das Flores, 123, São Paulo - SP\",\n  \"adminName\": \"Administrador\",\n  \"adminEmail\": \"admin@exemplo.com\",\n  \"adminPassword\": \"senha1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/tenants/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "tenants", "register"]
+            },
+            "description": "Cadastra um novo laboratório (tenant) e cria o primeiro usuário ADMIN. Retorna o token JWT automaticamente salvo na collection."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    if (res.token) {",
+                  "        pm.collectionVariables.set('token', res.token);",
+                  "        console.log('Token salvo automaticamente');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@exemplo.com\",\n  \"password\": \"senha1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Autentica um usuário do laboratório. O token JWT é salvo automaticamente na collection."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Retorna os dados do usuário autenticado a partir do JWT."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "POST /clients — PF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const res = pm.response.json();",
+                  "    if (res.id) {",
+                  "        pm.collectionVariables.set('clientId', res.id);",
+                  "        console.log('clientId salvo: ' + res.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoPessoa\": \"PF\",\n  \"nome\": \"João da Silva\",\n  \"documento\": \"12345678901\",\n  \"email\": \"joao@email.com\",\n  \"telefone\": \"11999990000\",\n  \"endereco\": \"Rua das Flores, 123, São Paulo - SP\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients"]
+            },
+            "description": "Cria um cliente Pessoa Física (CPF = 11 dígitos). O ID é salvo automaticamente em {{clientId}}.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /clients — PJ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const res = pm.response.json();",
+                  "    if (res.id) {",
+                  "        pm.collectionVariables.set('clientId', res.id);",
+                  "        console.log('clientId salvo: ' + res.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoPessoa\": \"PJ\",\n  \"nome\": \"Empresa Exemplo LTDA\",\n  \"documento\": \"12345678000195\",\n  \"email\": \"empresa@exemplo.com\",\n  \"telefone\": \"1133330000\",\n  \"endereco\": \"Av. Paulista, 1000, São Paulo - SP\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients"]
+            },
+            "description": "Cria um cliente Pessoa Jurídica (CNPJ = 14 dígitos). O ID é salvo automaticamente em {{clientId}}.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /clients",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients?page=1&pageSize=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Página (default: 1)" },
+                { "key": "pageSize", "value": "20", "description": "Itens por página (default: 20, max: 100)" },
+                { "key": "tipoPessoa", "value": "PF", "description": "Filtrar por tipo: PF ou PJ", "disabled": true },
+                { "key": "search", "value": "João", "description": "Buscar por nome ou documento", "disabled": true }
+              ]
+            },
+            "description": "Lista clientes do laboratório com paginação. Suporta filtro por tipoPessoa e busca por nome/documento.\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /clients/:id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients/{{clientId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients", "{{clientId}}"]
+            },
+            "description": "Retorna os detalhes de um cliente pelo ID. Usa {{clientId}} salvo automaticamente pelo POST.\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /clients/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva Santos\",\n  \"email\": \"joao.novo@email.com\",\n  \"telefone\": \"11988880000\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients/{{clientId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients", "{{clientId}}"]
+            },
+            "description": "Atualiza parcialmente um cliente. Apenas os campos enviados são alterados.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /clients/:id",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients/{{clientId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients", "{{clientId}}"]
+            },
+            "description": "Soft delete do cliente — marca como inativo sem remover do banco. Retorna 204.\n\nRoles: ADMIN apenas"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
