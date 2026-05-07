@@ -8,17 +8,19 @@ datasource db {
 }
 
 model Tenant {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   razaoSocial  String
   nomeFantasia String
-  cnpj         String   @unique
-  email        String   @unique
+  cnpj         String       @unique
+  email        String       @unique
   telefone     String?
   endereco     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   users        User[]
   clients      Client[]
+  attendances  Attendance[]
+  samples      Sample[]
 }
 
 model User {
@@ -48,20 +50,100 @@ enum TipoPessoa {
 }
 
 model Client {
-  id         String     @id @default(cuid())
-  tenantId   String
-  tipoPessoa TipoPessoa
-  nome       String
-  documento  String
-  email      String?
-  telefone   String?
-  endereco   String?
-  deletedAt  DateTime?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  id          String       @id @default(cuid())
+  tenantId    String
+  tipoPessoa  TipoPessoa
+  nome        String
+  documento   String
+  email       String?
+  telefone    String?
+  endereco    String?
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  attendances Attendance[]
+  samples     Sample[]
 
   @@unique([tenantId, documento])
   @@index([tenantId])
   @@index([tenantId, deletedAt])
+}
+
+enum StatusAtendimento {
+  ABERTO
+  EM_ANDAMENTO
+  ENCERRADO
+  CANCELADO
+}
+
+enum TipoColeta {
+  IN_LOCO
+  ENTREGA_NO_LABORATORIO
+}
+
+model Attendance {
+  id                String            @id @default(cuid())
+  tenantId          String
+  clientId          String
+  numeroAtendimento String
+  status            StatusAtendimento @default(ABERTO)
+  tipoColeta        TipoColeta
+  descricao         String?
+  dataSolicitacao   DateTime?
+  prazoEntrega      DateTime?
+  responsavel       String?
+  observacoes       String?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  tenant            Tenant            @relation(fields: [tenantId], references: [id])
+  client            Client            @relation(fields: [clientId], references: [id])
+  samples           Sample[]
+
+  @@unique([tenantId, numeroAtendimento])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+  @@index([tenantId, clientId])
+  @@index([tenantId, status])
+}
+
+enum StatusAmostra {
+  RECEBIDA
+  EM_ANALISE
+  CANCELADA
+  REJEITADA
+  CONCLUIDA
+}
+
+model Sample {
+  id                  String        @id @default(cuid())
+  tenantId            String
+  clientId            String
+  attendanceId        String
+  numeroAmostra       String
+  status              StatusAmostra @default(RECEBIDA)
+  descricao           String
+  dataColeta          DateTime?
+  dataRecebimento     DateTime?
+  amostrador          String?
+  etiqueta            String?
+  motivo              String?
+  temperaturaAmostra  Float?
+  temperaturaAmbiente Float?
+  umidadeRelativa     Float?
+  pontoColeta         String?
+  observacoes         String?
+  deletedAt           DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  tenant              Tenant        @relation(fields: [tenantId], references: [id])
+  client              Client        @relation(fields: [clientId], references: [id])
+  attendance          Attendance    @relation(fields: [attendanceId], references: [id])
+
+  @@unique([tenantId, numeroAmostra])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+  @@index([tenantId, attendanceId])
+  @@index([tenantId, status])
 }

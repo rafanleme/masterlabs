@@ -8,7 +8,9 @@ const errorHandler = require('./middlewares/errorHandler');
 const healthRouter = require('./health/healthRouter');
 const tenantRoutes = require('./modules/tenant/tenant.routes');
 const authRoutes = require('./modules/auth/auth.routes');
-const clientsRoutes = require('./modules/clients/clients.routes');
+const clientsRoutes     = require('./modules/clients/clients.routes');
+const attendancesRoutes = require('./modules/attendances/attendances.routes');
+const samplesRoutes     = require('./modules/samples/samples.routes');
 const config = require('./config');
 
 const app = express();
@@ -36,7 +38,9 @@ if (config.env !== 'production') {
 app.use(healthRouter);
 app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/clients', clientsRoutes);
+app.use('/api/v1/clients',     clientsRoutes);
+app.use('/api/v1/attendances', attendancesRoutes);
+app.use('/api/v1/samples',     samplesRoutes);
 
 app.use(errorHandler);
 
