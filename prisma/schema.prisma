@@ -21,6 +21,7 @@ model Tenant {
   clients      Client[]
   attendances  Attendance[]
   samples      Sample[]
+  assays       Assay[]
 }
 
 model User {
@@ -146,4 +147,34 @@ model Sample {
   @@index([tenantId, deletedAt])
   @@index([tenantId, attendanceId])
   @@index([tenantId, status])
+}
+
+enum TipoComparacao {
+  MENOR_QUE
+  MAIOR_QUE
+  MENOR_IGUAL
+  MAIOR_IGUAL
+  ENTRE
+  TEXTO
+}
+
+model Assay {
+  id              String          @id @default(cuid())
+  tenantId        String
+  nome            String
+  unidade         String
+  descricao       String?
+  metodoAnalitico String?
+  tipoComparacao  TipoComparacao?
+  limiteMinimo    Float?
+  limiteMaximo    Float?
+  valorReferencia String?
+  deletedAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
 }

@@ -13,7 +13,8 @@
     {"key": "token","value": "","type": "string","description": "JWT token — preenchido automaticamente pelo Login ou Register"},
     {"key": "clientId","value": "","type": "string","description": "ID do último cliente criado — preenchido automaticamente pelo POST /clients"},
     {"key": "attendanceId","value": "","type": "string","description": "ID do último atendimento criado — preenchido automaticamente pelo POST /attendances"},
-    {"key": "sampleId","value": "","type": "string","description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"}
+    {"key": "sampleId","value": "","type": "string","description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"},
+    {"key": "assayId","value": "","type": "string","description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"}
   ],
   "item": [
     {
@@ -243,6 +244,65 @@
         {
           "name": "DELETE /samples/:id",
           "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/samples/{{sampleId}}","host": ["{{base_url}}"],"path": ["api","v1","samples","{{sampleId}}"]},"description": "Soft delete da amostra. Retorna 204.\n\nRoles: ADMIN apenas"},
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Assays",
+      "item": [
+        {
+          "name": "POST /assays — ENTRE",
+          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('assayId', res.id);","        console.log('assayId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"nome\": \"pH da Água\",\n  \"unidade\": \"unidade de pH\",\n  \"descricao\": \"Determinação do pH por eletrometria\",\n  \"metodoAnalitico\": \"ABNT NBR 9898\",\n  \"tipoComparacao\": \"ENTRE\",\n  \"limiteMinimo\": 6.0,\n  \"limiteMaximo\": 9.5,\n  \"valorReferencia\": \"6,0 a 9,5\"\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/assays","host": ["{{base_url}}"],"path": ["api","v1","assays"]},
+            "description": "Cria um ensaio com faixa numérica (entre mínimo e máximo). ID salvo em {{assayId}}.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /assays — TEXTO",
+          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('assayId', res.id);","        console.log('assayId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"nome\": \"Coliformes Totais\",\n  \"unidade\": \"UFC/100mL\",\n  \"metodoAnalitico\": \"SMEWW 9221 B\",\n  \"tipoComparacao\": \"TEXTO\",\n  \"valorReferencia\": \"Ausência em 100mL\"\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/assays","host": ["{{base_url}}"],"path": ["api","v1","assays"]},
+            "description": "Cria um ensaio com referência textual (sem comparação numérica). ID salvo em {{assayId}}.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /assays",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/api/v1/assays?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","assays"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "search","value": "pH","disabled": true}]},
+            "description": "Lista ensaios do catálogo com paginação. Suporta filtro por search (nome).\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /assays/:id",
+          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},"description": "Retorna os detalhes completos de um ensaio.\n\nRoles: ADMIN, ANALYST, VIEWER"},
+          "response": []
+        },
+        {
+          "name": "PATCH /assays/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"metodoAnalitico\": \"EPA 150.1\",\n  \"limiteMaximo\": 9.0\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},
+            "description": "Atualiza parcialmente um ensaio do catálogo.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /assays/:id",
+          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},"description": "Soft delete do ensaio — remove do catálogo ativo sem apagar histórico. Retorna 204.\n\nRoles: ADMIN apenas"},
           "response": []
         }
       ]
