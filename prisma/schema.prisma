@@ -21,7 +21,8 @@ model Tenant {
   clients      Client[]
   attendances  Attendance[]
   samples      Sample[]
-  assays       Assay[]
+  assays          Assay[]
+  reportTemplates ReportTemplate[]
 }
 
 model User {
@@ -172,9 +173,38 @@ model Assay {
   deletedAt       DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  tenant          Tenant                @relation(fields: [tenantId], references: [id])
+  reportTemplates ReportTemplateAssay[]
 
   @@unique([tenantId, nome])
   @@index([tenantId])
   @@index([tenantId, deletedAt])
+}
+
+model ReportTemplate {
+  id        String                @id @default(cuid())
+  tenantId  String
+  nome      String
+  descricao String?
+  deletedAt DateTime?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  tenant    Tenant                @relation(fields: [tenantId], references: [id])
+  assays    ReportTemplateAssay[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+}
+
+model ReportTemplateAssay {
+  id               String         @id @default(cuid())
+  reportTemplateId String
+  assayId          String
+  ordem            Int
+  reportTemplate   ReportTemplate @relation(fields: [reportTemplateId], references: [id])
+  assay            Assay          @relation(fields: [assayId], references: [id])
+
+  @@unique([reportTemplateId, assayId])
+  @@index([reportTemplateId])
 }

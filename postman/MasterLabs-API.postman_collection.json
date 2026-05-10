@@ -14,7 +14,8 @@
     {"key": "clientId","value": "","type": "string","description": "ID do último cliente criado — preenchido automaticamente pelo POST /clients"},
     {"key": "attendanceId","value": "","type": "string","description": "ID do último atendimento criado — preenchido automaticamente pelo POST /attendances"},
     {"key": "sampleId","value": "","type": "string","description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"},
-    {"key": "assayId","value": "","type": "string","description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"}
+    {"key": "assayId","value": "","type": "string","description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"},
+    {"key": "reportTemplateId","value": "","type": "string","description": "ID do último modelo de laudo criado — preenchido automaticamente pelo POST /report-templates"}
   ],
   "item": [
     {
@@ -303,6 +304,53 @@
         {
           "name": "DELETE /assays/:id",
           "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},"description": "Soft delete do ensaio — remove do catálogo ativo sem apagar histórico. Retorna 204.\n\nRoles: ADMIN apenas"},
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Report Templates",
+      "item": [
+        {
+          "name": "POST /report-templates",
+          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('reportTemplateId', res.id);","        console.log('reportTemplateId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"nome\": \"Laudo Físico-Químico de Água\",\n  \"descricao\": \"Análises físico-químicas para água de consumo humano (Portaria 888/2021)\",\n  \"assayIds\": [\n    \"{{assayId}}\"\n  ]\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/report-templates","host": ["{{base_url}}"],"path": ["api","v1","report-templates"]},
+            "description": "Cria um modelo de laudo com lista ordenada de ensaios. A posição no array define a ordem de exibição no PDF. ID salvo em {{reportTemplateId}}.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /report-templates",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/api/v1/report-templates?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","report-templates"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "search","value": "Físico","disabled": true}]},
+            "description": "Lista modelos de laudo com paginação. Inclui assayCount por modelo. Filtro por search (nome).\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /report-templates/:id",
+          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},"description": "Retorna o modelo completo com array de ensaios ordenados (ordem, assay com todos os campos).\n\nRoles: ADMIN, ANALYST, VIEWER"},
+          "response": []
+        },
+        {
+          "name": "PATCH /report-templates/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"descricao\": \"Atualizado conforme Portaria 888/2021\",\n  \"assayIds\": [\n    \"{{assayId}}\"\n  ]\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},
+            "description": "Atualiza nome/descrição e/ou substitui a lista completa de ensaios atomicamente.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /report-templates/:id",
+          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},"description": "Soft delete do modelo — remove do catálogo ativo. Retorna 204.\n\nRoles: ADMIN apenas"},
           "response": []
         }
       ]

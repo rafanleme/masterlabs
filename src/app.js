@@ -11,7 +11,8 @@ const authRoutes = require('./modules/auth/auth.routes');
 const clientsRoutes     = require('./modules/clients/clients.routes');
 const attendancesRoutes = require('./modules/attendances/attendances.routes');
 const samplesRoutes     = require('./modules/samples/samples.routes');
-const assaysRoutes      = require('./modules/assays/assays.routes');
+const assaysRoutes           = require('./modules/assays/assays.routes');
+const reportTemplatesRoutes  = require('./modules/report-templates/report-templates.routes');
 const config = require('./config');
 
 const app = express();
@@ -42,7 +43,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/clients',     clientsRoutes);
 app.use('/api/v1/attendances', attendancesRoutes);
 app.use('/api/v1/samples',     samplesRoutes);
-app.use('/api/v1/assays',      assaysRoutes);
+app.use('/api/v1/assays',            assaysRoutes);
+app.use('/api/v1/report-templates',  reportTemplatesRoutes);
 
 app.use(errorHandler);
 
