@@ -15,7 +15,8 @@
     {"key": "attendanceId","value": "","type": "string","description": "ID do último atendimento criado — preenchido automaticamente pelo POST /attendances"},
     {"key": "sampleId","value": "","type": "string","description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"},
     {"key": "assayId","value": "","type": "string","description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"},
-    {"key": "reportTemplateId","value": "","type": "string","description": "ID do último modelo de laudo criado — preenchido automaticamente pelo POST /report-templates"}
+    {"key": "reportTemplateId","value": "","type": "string","description": "ID do último modelo de laudo criado — preenchido automaticamente pelo POST /report-templates"},
+    {"key": "reportId","value": "","type": "string","description": "ID do último laudo criado — preenchido automaticamente pelo POST /reports"}
   ],
   "item": [
     {
@@ -351,6 +352,75 @@
         {
           "name": "DELETE /report-templates/:id",
           "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},"description": "Soft delete do modelo — remove do catálogo ativo. Retorna 204.\n\nRoles: ADMIN apenas"},
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "POST /reports",
+          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('reportId', res.id);","        console.log('reportId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"sampleId\": \"{{sampleId}}\",\n  \"reportTemplateId\": \"{{reportTemplateId}}\",\n  \"responsavel\": \"Dr. Carlos Menezes\",\n  \"observacoes\": \"Coleta após evento de chuva\"\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/reports","host": ["{{base_url}}"],"path": ["api","v1","reports"]},
+            "description": "Cria um laudo em RASCUNHO. Items criados automaticamente a partir do modelo. ID salvo em {{reportId}}.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /reports",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/api/v1/reports?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","reports"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "status","value": "RASCUNHO","disabled": true},{"key": "sampleId","value": "{{sampleId}}","disabled": true}]},
+            "description": "Lista laudos com paginação. Filtros: status (RASCUNHO|EMITIDO|CANCELADO), sampleId.\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /reports/:id",
+          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},"description": "Retorna o laudo completo com items ordenados por ensaio.\n\nRoles: ADMIN, ANALYST, VIEWER"},
+          "response": []
+        },
+        {
+          "name": "PATCH /reports/:id — metadados",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"responsavel\": \"Dr. Paulo Lima\",\n  \"observacoes\": \"Revisado\"\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},
+            "description": "Edita metadados do laudo. Só permitido em RASCUNHO.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /reports/:id/items/:assayId — resultado",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"valor\": \"7,2\",\n  \"valorNumerico\": 7.2,\n  \"observacoes\": \"Medido às 09:30\"\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/items/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","items","{{assayId}}"]},
+            "description": "Registra resultado de um ensaio. Conformidade calculada automaticamente. Só em RASCUNHO.\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /reports/:id/status — emitir",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {"mode": "raw","raw": "{\n  \"status\": \"EMITIDO\"\n}","options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/status","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","status"]},
+            "description": "Transita status do laudo.\nTransições válidas: RASCUNHO → EMITIDO | CANCELADO\nEMITIDO e CANCELADO são terminais → 422\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /reports/:id",
+          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},"description": "Soft delete. Bloqueado para laudos EMITIDOS (422). Retorna 204.\n\nRoles: ADMIN apenas"},
           "response": []
         }
       ]

@@ -23,6 +23,7 @@ model Tenant {
   samples      Sample[]
   assays          Assay[]
   reportTemplates ReportTemplate[]
+  reports         Report[]
 }
 
 model User {
@@ -143,6 +144,8 @@ model Sample {
   client              Client        @relation(fields: [clientId], references: [id])
   attendance          Attendance    @relation(fields: [attendanceId], references: [id])
 
+  reports             Report[]
+
   @@unique([tenantId, numeroAmostra])
   @@index([tenantId])
   @@index([tenantId, deletedAt])
@@ -175,6 +178,7 @@ model Assay {
   updatedAt       DateTime        @updatedAt
   tenant          Tenant                @relation(fields: [tenantId], references: [id])
   reportTemplates ReportTemplateAssay[]
+  reportItems     ReportItem[]
 
   @@unique([tenantId, nome])
   @@index([tenantId])
@@ -191,6 +195,7 @@ model ReportTemplate {
   updatedAt DateTime              @updatedAt
   tenant    Tenant                @relation(fields: [tenantId], references: [id])
   assays    ReportTemplateAssay[]
+  reports   Report[]
 
   @@unique([tenantId, nome])
   @@index([tenantId])
@@ -207,4 +212,57 @@ model ReportTemplateAssay {
 
   @@unique([reportTemplateId, assayId])
   @@index([reportTemplateId])
+}
+
+enum StatusLaudo {
+  RASCUNHO
+  EMITIDO
+  CANCELADO
+}
+
+enum Conformidade {
+  CONFORME
+  NAO_CONFORME
+  INCONCLUSIVO
+}
+
+model Report {
+  id               String         @id @default(cuid())
+  tenantId         String
+  sampleId         String
+  reportTemplateId String
+  numeroLaudo      String
+  status           StatusLaudo    @default(RASCUNHO)
+  dataEmissao      DateTime?
+  responsavel      String?
+  observacoes      String?
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  tenant           Tenant         @relation(fields: [tenantId], references: [id])
+  sample           Sample         @relation(fields: [sampleId], references: [id])
+  reportTemplate   ReportTemplate @relation(fields: [reportTemplateId], references: [id])
+  items            ReportItem[]
+
+  @@unique([tenantId, numeroLaudo])
+  @@index([tenantId])
+  @@index([tenantId, sampleId])
+  @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+}
+
+model ReportItem {
+  id            String       @id @default(cuid())
+  reportId      String
+  assayId       String
+  ordem         Int
+  valor         String?
+  valorNumerico Float?
+  conformidade  Conformidade @default(INCONCLUSIVO)
+  observacoes   String?
+  report        Report       @relation(fields: [reportId], references: [id])
+  assay         Assay        @relation(fields: [assayId], references: [id])
+
+  @@unique([reportId, assayId])
+  @@index([reportId])
 }
