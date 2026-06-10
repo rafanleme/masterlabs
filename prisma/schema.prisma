@@ -24,18 +24,20 @@ model Tenant {
   assays          Assay[]
   reportTemplates ReportTemplate[]
   reports         Report[]
+  pdfArtifacts    PdfArtifact[]
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   tenantId     String
   name         String
   email        String
   passwordHash String
-  role         Role     @default(ANALYST)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  role         Role          @default(ANALYST)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  pdfArtifacts PdfArtifact[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -243,6 +245,7 @@ model Report {
   sample           Sample         @relation(fields: [sampleId], references: [id])
   reportTemplate   ReportTemplate @relation(fields: [reportTemplateId], references: [id])
   items            ReportItem[]
+  pdfArtifacts     PdfArtifact[]
 
   @@unique([tenantId, numeroLaudo])
   @@index([tenantId])
@@ -264,5 +267,25 @@ model ReportItem {
   assay         Assay        @relation(fields: [assayId], references: [id])
 
   @@unique([reportId, assayId])
+  @@index([reportId])
+}
+
+model PdfArtifact {
+  id          String   @id @default(cuid())
+  tenantId    String
+  reportId    String
+  version     Int
+  storagePath String   @db.VarChar(500)
+  filename    String   @db.VarChar(255)
+  size        Int
+  createdById String
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  report    Report @relation(fields: [reportId], references: [id])
+  createdBy User   @relation(fields: [createdById], references: [id])
+
+  @@unique([reportId, version])
+  @@index([tenantId])
   @@index([reportId])
 }

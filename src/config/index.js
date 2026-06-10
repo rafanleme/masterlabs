@@ -16,4 +16,10 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
+  storage: {
+    baseUrl: process.env.STORAGE_BASE_URL || 'https://www.rtisolutionscode.com.br/storage',
+    apiKey: process.env.STORAGE_API_KEY,
+    timeoutMs: parseInt(process.env.STORAGE_TIMEOUT_MS || '30000', 10),
+    maxBytes: parseInt(process.env.STORAGE_MAX_BYTES || '10485760', 10),
+  },
 };

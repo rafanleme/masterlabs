@@ -10,19 +10,26 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/integration/**/*.test.js"],
-    "setupFiles": ["./tests/setup.js"]
+    "testMatch": [
+      "**/tests/integration/**/*.test.js"
+    ],
+    "setupFiles": [
+      "./tests/setup.js"
+    ]
   },
   "engines": {
     "node": "20.x"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "axios": "^1.17.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "form-data": "^4.0.5",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.22.3",
+    "pdfkit": "^0.19.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.0",

@@ -16,7 +16,9 @@
     {"key": "sampleId","value": "","type": "string","description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"},
     {"key": "assayId","value": "","type": "string","description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"},
     {"key": "reportTemplateId","value": "","type": "string","description": "ID do último modelo de laudo criado — preenchido automaticamente pelo POST /report-templates"},
-    {"key": "reportId","value": "","type": "string","description": "ID do último laudo criado — preenchido automaticamente pelo POST /reports"}
+    {"key": "reportId","value": "","type": "string","description": "ID do último laudo criado — preenchido automaticamente pelo POST /reports"},
+    {"key": "pdfArtifactId","value": "","type": "string","description": "ID do último PDF de laudo gerado — preenchido automaticamente pelo POST /reports/:id/pdf"},
+    {"key": "pdfVersion","value": "","type": "string","description": "Versão do último PDF de laudo gerado — preenchida automaticamente pelo POST /reports/:id/pdf"}
   ],
   "item": [
     {
@@ -421,6 +423,34 @@
         {
           "name": "DELETE /reports/:id",
           "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},"description": "Soft delete. Bloqueado para laudos EMITIDOS (422). Retorna 204.\n\nRoles: ADMIN apenas"},
+          "response": []
+        },
+        {
+          "name": "POST /reports/:id/pdf — gerar PDF",
+          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('pdfArtifactId', res.id);","        pm.collectionVariables.set('pdfVersion', String(res.version));","        console.log('pdfArtifactId salvo: ' + res.id + ' (v' + res.version + ')');","    }","}"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","pdf"]},
+            "description": "Gera uma nova versão do PDF do laudo e envia ao storage externo. Só permitido para laudos EMITIDO.\n\nResposta 201 retorna o PdfArtifact criado (id, version, filename, size, createdAt, createdBy). O storagePath não é exposto.\n\nErros:\n- 409 — laudo não está EMITIDO\n- 404 — laudo de outro tenant ou inexistente\n- 502 — falha na Storage API\n\nRoles: ADMIN, ANALYST"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /reports/:id/pdf-artifacts — listar versões",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf-artifacts","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","pdf-artifacts"]},
+            "description": "Lista todas as versões de PDF geradas para o laudo, em ordem decrescente de versão.\n\nCada item: { id, version, filename, size, createdAt, createdBy: { id, name } }. Não expõe storagePath.\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /reports/:id/pdf — baixar PDF",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf?inline=0","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","pdf"],"query": [{"key": "version","value": "{{pdfVersion}}","disabled": true,"description": "Versão específica. Omitido = última versão."},{"key": "inline","value": "0","description": "0 = attachment (download), 1 = inline (abre no browser)"}]},
+            "description": "Baixa o PDF do laudo via proxy do backend. Sem ?version retorna a última versão; com ?version=N retorna a versão específica. ?inline=1 troca o Content-Disposition para inline.\n\nResposta 200: application/pdf binário.\n\nErros:\n- 404 — laudo de outro tenant, sem PDFs gerados, ou versão inexistente\n- 502 — falha no download da Storage API\n\nRoles: ADMIN, ANALYST, VIEWER"
+          },
           "response": []
         }
       ]
