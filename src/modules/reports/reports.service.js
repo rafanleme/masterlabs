@@ -1,5 +1,6 @@
 const prisma = require('../../lib/prisma');
 const logger = require('../../logger');
+const { toCsv } = require('../../lib/csv');
 
 const DEFAULT_PAGE      = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -225,7 +226,32 @@ async function softDeleteReport(tenantId, id) {
   logger.info({ event: 'report.deleted', reportId: id, tenantId });
 }
 
+async function exportReportsCsv(tenantId) {
+  const reports = await prisma.report.findMany({
+    where: { tenantId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      sample:         { select: { numeroAmostra: true, client: { select: { nome: true, documento: true } } } },
+      reportTemplate: { select: { nome: true } },
+      _count:         { select: { pdfArtifacts: true } },
+    },
+  });
+
+  logger.info({ event: 'reports.exported', tenantId, count: reports.length });
+
+  return toCsv(
+    ['Número do Laudo', 'Status', 'Cliente', 'Documento', 'Amostra', 'Modelo', 'Responsável', 'Data de Emissão', 'Versões PDF', 'Criado em'],
+    reports.map((r) => [
+      r.numeroLaudo, r.status,
+      r.sample.client.nome, r.sample.client.documento, r.sample.numeroAmostra,
+      r.reportTemplate.nome, r.responsavel, r.dataEmissao,
+      r._count.pdfArtifacts, r.createdAt,
+    ]),
+  );
+}
+
 module.exports = {
   createReport, listReports, getReportById,
   updateReport, updateReportItem, updateReportStatus, softDeleteReport,
+  exportReportsCsv,
 };

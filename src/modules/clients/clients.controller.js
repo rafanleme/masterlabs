@@ -45,4 +45,15 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { create, list, getById, update, remove };
+async function exportCsv(req, res, next) {
+  try {
+    const csv = await service.exportClientsCsv(req.user.tenantId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="clientes.csv"');
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list, getById, update, remove, exportCsv };

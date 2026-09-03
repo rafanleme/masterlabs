@@ -1,5 +1,6 @@
 const prisma = require('../../lib/prisma');
 const logger = require('../../logger');
+const { toCsv } = require('../../lib/csv');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -98,4 +99,18 @@ async function softDeleteClient(tenantId, id) {
   logger.info({ event: 'client.deleted', clientId: id, tenantId });
 }
 
-module.exports = { createClient, listClients, getClientById, updateClient, softDeleteClient };
+async function exportClientsCsv(tenantId) {
+  const clients = await prisma.client.findMany({
+    where: { tenantId, deletedAt: null },
+    orderBy: { nome: 'asc' },
+  });
+
+  logger.info({ event: 'clients.exported', tenantId, count: clients.length });
+
+  return toCsv(
+    ['Nome', 'Tipo', 'Documento', 'E-mail', 'Telefone', 'Endereço', 'Cadastrado em'],
+    clients.map((c) => [c.nome, c.tipoPessoa, c.documento, c.email, c.telefone, c.endereco, c.createdAt]),
+  );
+}
+
+module.exports = { createClient, listClients, getClientById, updateClient, softDeleteClient, exportClientsCsv };

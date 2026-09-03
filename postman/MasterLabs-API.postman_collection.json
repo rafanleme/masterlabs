@@ -1,459 +1,2115 @@
 {
-  "info": {
-    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "name": "MasterLabs API",
-    "description": "Collection completa da MasterLabs API — SaaS multi-tenant de laudos laboratoriais.\n\n**Como usar:**\n1. Selecione o environment desejado (Local / Stage / Prod)\n2. Execute **Auth > Register Tenant** ou **Auth > Login** — o token é salvo automaticamente\n3. A partir daí todos os endpoints autenticados funcionam sem configuração manual",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "bearer",
-    "bearer": [{"key": "token","value": "{{token}}","type": "string"}]
-  },
-  "variable": [
-    {"key": "token","value": "","type": "string","description": "JWT token — preenchido automaticamente pelo Login ou Register"},
-    {"key": "clientId","value": "","type": "string","description": "ID do último cliente criado — preenchido automaticamente pelo POST /clients"},
-    {"key": "attendanceId","value": "","type": "string","description": "ID do último atendimento criado — preenchido automaticamente pelo POST /attendances"},
-    {"key": "sampleId","value": "","type": "string","description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"},
-    {"key": "assayId","value": "","type": "string","description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"},
-    {"key": "reportTemplateId","value": "","type": "string","description": "ID do último modelo de laudo criado — preenchido automaticamente pelo POST /report-templates"},
-    {"key": "reportId","value": "","type": "string","description": "ID do último laudo criado — preenchido automaticamente pelo POST /reports"},
-    {"key": "pdfArtifactId","value": "","type": "string","description": "ID do último PDF de laudo gerado — preenchido automaticamente pelo POST /reports/:id/pdf"},
-    {"key": "pdfVersion","value": "","type": "string","description": "Versão do último PDF de laudo gerado — preenchida automaticamente pelo POST /reports/:id/pdf"}
-  ],
-  "item": [
-    {
-      "name": "Health",
-      "item": [
-        {
-          "name": "GET /healthz",
-          "request": {"auth": {"type": "noauth"},"method": "GET","url": {"raw": "{{base_url}}/healthz","host": ["{{base_url}}"],"path": ["healthz"]},"description": "Healthcheck geral da API. Retorna 200 se o servidor está up."},
-          "response": []
-        },
-        {
-          "name": "GET /healthz/db",
-          "request": {"auth": {"type": "noauth"},"method": "GET","url": {"raw": "{{base_url}}/healthz/db","host": ["{{base_url}}"],"path": ["healthz","db"]},"description": "Healthcheck do banco MySQL. Retorna 200 se a conexão está ativa."},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Tenants",
-      "item": [
-        {
-          "name": "POST /tenants/register",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.token) {","        pm.collectionVariables.set('token', res.token);","        console.log('Token salvo automaticamente');","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "auth": {"type": "noauth"},
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"razaoSocial\": \"Laboratório Exemplo S/A\",\n  \"nomeFantasia\": \"Lab Exemplo\",\n  \"cnpj\": \"12345678000195\",\n  \"email\": \"lab@exemplo.com\",\n  \"telefone\": \"11999990000\",\n  \"endereco\": \"Rua das Flores, 123, São Paulo - SP\",\n  \"adminName\": \"Administrador\",\n  \"adminEmail\": \"admin@exemplo.com\",\n  \"adminPassword\": \"senha1234\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/tenants/register","host": ["{{base_url}}"],"path": ["api","v1","tenants","register"]},
-            "description": "Cadastra um novo laboratório (tenant) e cria o primeiro usuário ADMIN. Retorna o token JWT automaticamente salvo na collection."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "POST /auth/login",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    const res = pm.response.json();","    if (res.token) {","        pm.collectionVariables.set('token', res.token);","        console.log('Token salvo automaticamente');","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "auth": {"type": "noauth"},
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"email\": \"admin@exemplo.com\",\n  \"password\": \"senha1234\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/auth/login","host": ["{{base_url}}"],"path": ["api","v1","auth","login"]},
-            "description": "Autentica um usuário do laboratório. O token JWT é salvo automaticamente na collection."
-          },
-          "response": []
-        },
-        {
-          "name": "GET /auth/me",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/auth/me","host": ["{{base_url}}"],"path": ["api","v1","auth","me"]},"description": "Retorna os dados do usuário autenticado a partir do JWT."},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Clients",
-      "item": [
-        {
-          "name": "POST /clients — PF",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('clientId', res.id);","        console.log('clientId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"tipoPessoa\": \"PF\",\n  \"nome\": \"João da Silva\",\n  \"documento\": \"12345678901\",\n  \"email\": \"joao@email.com\",\n  \"telefone\": \"11999990000\",\n  \"endereco\": \"Rua das Flores, 123, São Paulo - SP\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/clients","host": ["{{base_url}}"],"path": ["api","v1","clients"]},
-            "description": "Cria um cliente Pessoa Física (CPF = 11 dígitos). O ID é salvo automaticamente em {{clientId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "POST /clients — PJ",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('clientId', res.id);","        console.log('clientId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"tipoPessoa\": \"PJ\",\n  \"nome\": \"Empresa Exemplo LTDA\",\n  \"documento\": \"12345678000195\",\n  \"email\": \"empresa@exemplo.com\",\n  \"telefone\": \"1133330000\",\n  \"endereco\": \"Av. Paulista, 1000, São Paulo - SP\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/clients","host": ["{{base_url}}"],"path": ["api","v1","clients"]},
-            "description": "Cria um cliente Pessoa Jurídica (CNPJ = 14 dígitos). O ID é salvo automaticamente em {{clientId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /clients",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/clients?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","clients"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "tipoPessoa","value": "PF","disabled": true},{"key": "search","value": "João","disabled": true}]},
-            "description": "Lista clientes do laboratório com paginação. Suporta filtro por tipoPessoa e busca por nome/documento.\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /clients/:id",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/clients/{{clientId}}","host": ["{{base_url}}"],"path": ["api","v1","clients","{{clientId}}"]},"description": "Retorna os detalhes de um cliente pelo ID.\n\nRoles: ADMIN, ANALYST, VIEWER"},
-          "response": []
-        },
-        {
-          "name": "PATCH /clients/:id",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"nome\": \"João da Silva Santos\",\n  \"email\": \"joao.novo@email.com\",\n  \"telefone\": \"11988880000\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/clients/{{clientId}}","host": ["{{base_url}}"],"path": ["api","v1","clients","{{clientId}}"]},
-            "description": "Atualiza parcialmente um cliente. Apenas os campos enviados são alterados.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "DELETE /clients/:id",
-          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/clients/{{clientId}}","host": ["{{base_url}}"],"path": ["api","v1","clients","{{clientId}}"]},"description": "Soft delete do cliente — marca como inativo sem remover do banco. Retorna 204.\n\nRoles: ADMIN apenas"},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Attendances",
-      "item": [
-        {
-          "name": "POST /attendances",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('attendanceId', res.id);","        console.log('attendanceId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"clientId\": \"{{clientId}}\",\n  \"tipoColeta\": \"IN_LOCO\",\n  \"descricao\": \"Análise de qualidade da água para fins de consumo humano\",\n  \"dataSolicitacao\": \"2026-05-02T09:00:00.000Z\",\n  \"prazoEntrega\": \"2026-05-10T18:00:00.000Z\",\n  \"responsavel\": \"Dr. Carlos Menezes\",\n  \"observacoes\": \"Urgência nos laudos de coliformes\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/attendances","host": ["{{base_url}}"],"path": ["api","v1","attendances"]},
-            "description": "Cria um atendimento (ordem de serviço). Número de protocolo gerado automaticamente. ID salvo em {{attendanceId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /attendances",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/attendances?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","attendances"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "status","value": "ABERTO","disabled": true},{"key": "tipoColeta","value": "IN_LOCO","disabled": true},{"key": "clientId","value": "{{clientId}}","disabled": true},{"key": "search","value": "","disabled": true}]},
-            "description": "Lista atendimentos com paginação. Filtros: status, tipoColeta, clientId, search.\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /attendances/:id",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}","host": ["{{base_url}}"],"path": ["api","v1","attendances","{{attendanceId}}"]},"description": "Retorna os detalhes de um atendimento.\n\nRoles: ADMIN, ANALYST, VIEWER"},
-          "response": []
-        },
-        {
-          "name": "PATCH /attendances/:id",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"responsavel\": \"Dr. Paulo Lima\",\n  \"observacoes\": \"Prazo antecipado pelo cliente\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}","host": ["{{base_url}}"],"path": ["api","v1","attendances","{{attendanceId}}"]},
-            "description": "Atualiza campos do atendimento parcialmente. Status e número de protocolo são imutáveis aqui.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "PATCH /attendances/:id/status",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"status\": \"EM_ANDAMENTO\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}/status","host": ["{{base_url}}"],"path": ["api","v1","attendances","{{attendanceId}}","status"]},
-            "description": "Transita o status do atendimento.\nTransições válidas:\n- ABERTO → EM_ANDAMENTO | CANCELADO\n- EM_ANDAMENTO → ENCERRADO | CANCELADO\n- ENCERRADO e CANCELADO são terminais → retorna 422\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "DELETE /attendances/:id",
-          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}","host": ["{{base_url}}"],"path": ["api","v1","attendances","{{attendanceId}}"]},"description": "Soft delete do atendimento. Retorna 204.\n\nRoles: ADMIN apenas"},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Samples",
-      "item": [
-        {
-          "name": "POST /samples",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('sampleId', res.id);","        console.log('sampleId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"attendanceId\": \"{{attendanceId}}\",\n  \"descricao\": \"Amostra de água superficial\",\n  \"dataColeta\": \"2026-05-01T08:00:00.000Z\",\n  \"dataRecebimento\": \"2026-05-02T09:30:00.000Z\",\n  \"amostrador\": \"Carlos Souza\",\n  \"etiqueta\": \"RIO-001-A\",\n  \"motivo\": \"Monitoramento mensal\",\n  \"temperaturaAmostra\": 18.5,\n  \"temperaturaAmbiente\": 24.0,\n  \"umidadeRelativa\": 72.3,\n  \"pontoColeta\": \"Rio Tietê — km 42\",\n  \"observacoes\": \"Coleta realizada após chuva intensa\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/samples","host": ["{{base_url}}"],"path": ["api","v1","samples"]},
-            "description": "Registra uma amostra vinculada a um atendimento. Número sequencial gerado automaticamente. ID salvo em {{sampleId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /samples",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/samples?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","samples"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "attendanceId","value": "{{attendanceId}}","disabled": true},{"key": "status","value": "RECEBIDA","disabled": true},{"key": "search","value": "","disabled": true}]},
-            "description": "Lista amostras com paginação. Filtros: attendanceId, status, search (numeroAmostra, descricao, pontoColeta).\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /samples/:id",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/samples/{{sampleId}}","host": ["{{base_url}}"],"path": ["api","v1","samples","{{sampleId}}"]},"description": "Retorna os detalhes completos de uma amostra.\n\nRoles: ADMIN, ANALYST, VIEWER"},
-          "response": []
-        },
-        {
-          "name": "PATCH /samples/:id",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"amostrador\": \"Paulo Lima\",\n  \"temperaturaAmostra\": 19.2,\n  \"observacoes\": \"Revisado após nova medição\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/samples/{{sampleId}}","host": ["{{base_url}}"],"path": ["api","v1","samples","{{sampleId}}"]},
-            "description": "Atualiza campos da amostra parcialmente. Status e número são imutáveis aqui.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "PATCH /samples/:id/status",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"status\": \"EM_ANALISE\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/samples/{{sampleId}}/status","host": ["{{base_url}}"],"path": ["api","v1","samples","{{sampleId}}","status"]},
-            "description": "Transita o status da amostra.\nTransições válidas:\n- RECEBIDA → EM_ANALISE | CANCELADA | REJEITADA\n- EM_ANALISE → CONCLUIDA | CANCELADA | REJEITADA\n- CONCLUIDA, CANCELADA e REJEITADA são terminais → retorna 422\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "DELETE /samples/:id",
-          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/samples/{{sampleId}}","host": ["{{base_url}}"],"path": ["api","v1","samples","{{sampleId}}"]},"description": "Soft delete da amostra. Retorna 204.\n\nRoles: ADMIN apenas"},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Assays",
-      "item": [
-        {
-          "name": "POST /assays — ENTRE",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('assayId', res.id);","        console.log('assayId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"nome\": \"pH da Água\",\n  \"unidade\": \"unidade de pH\",\n  \"descricao\": \"Determinação do pH por eletrometria\",\n  \"metodoAnalitico\": \"ABNT NBR 9898\",\n  \"tipoComparacao\": \"ENTRE\",\n  \"limiteMinimo\": 6.0,\n  \"limiteMaximo\": 9.5,\n  \"valorReferencia\": \"6,0 a 9,5\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/assays","host": ["{{base_url}}"],"path": ["api","v1","assays"]},
-            "description": "Cria um ensaio com faixa numérica (entre mínimo e máximo). ID salvo em {{assayId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "POST /assays — TEXTO",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('assayId', res.id);","        console.log('assayId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"nome\": \"Coliformes Totais\",\n  \"unidade\": \"UFC/100mL\",\n  \"metodoAnalitico\": \"SMEWW 9221 B\",\n  \"tipoComparacao\": \"TEXTO\",\n  \"valorReferencia\": \"Ausência em 100mL\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/assays","host": ["{{base_url}}"],"path": ["api","v1","assays"]},
-            "description": "Cria um ensaio com referência textual (sem comparação numérica). ID salvo em {{assayId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /assays",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/assays?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","assays"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "search","value": "pH","disabled": true}]},
-            "description": "Lista ensaios do catálogo com paginação. Suporta filtro por search (nome).\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /assays/:id",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},"description": "Retorna os detalhes completos de um ensaio.\n\nRoles: ADMIN, ANALYST, VIEWER"},
-          "response": []
-        },
-        {
-          "name": "PATCH /assays/:id",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"metodoAnalitico\": \"EPA 150.1\",\n  \"limiteMaximo\": 9.0\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},
-            "description": "Atualiza parcialmente um ensaio do catálogo.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "DELETE /assays/:id",
-          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/assays/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","assays","{{assayId}}"]},"description": "Soft delete do ensaio — remove do catálogo ativo sem apagar histórico. Retorna 204.\n\nRoles: ADMIN apenas"},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Report Templates",
-      "item": [
-        {
-          "name": "POST /report-templates",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('reportTemplateId', res.id);","        console.log('reportTemplateId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"nome\": \"Laudo Físico-Químico de Água\",\n  \"descricao\": \"Análises físico-químicas para água de consumo humano (Portaria 888/2021)\",\n  \"assayIds\": [\n    \"{{assayId}}\"\n  ]\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/report-templates","host": ["{{base_url}}"],"path": ["api","v1","report-templates"]},
-            "description": "Cria um modelo de laudo com lista ordenada de ensaios. A posição no array define a ordem de exibição no PDF. ID salvo em {{reportTemplateId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /report-templates",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/report-templates?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","report-templates"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "search","value": "Físico","disabled": true}]},
-            "description": "Lista modelos de laudo com paginação. Inclui assayCount por modelo. Filtro por search (nome).\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /report-templates/:id",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},"description": "Retorna o modelo completo com array de ensaios ordenados (ordem, assay com todos os campos).\n\nRoles: ADMIN, ANALYST, VIEWER"},
-          "response": []
-        },
-        {
-          "name": "PATCH /report-templates/:id",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"descricao\": \"Atualizado conforme Portaria 888/2021\",\n  \"assayIds\": [\n    \"{{assayId}}\"\n  ]\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},
-            "description": "Atualiza nome/descrição e/ou substitui a lista completa de ensaios atomicamente.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "DELETE /report-templates/:id",
-          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}","host": ["{{base_url}}"],"path": ["api","v1","report-templates","{{reportTemplateId}}"]},"description": "Soft delete do modelo — remove do catálogo ativo. Retorna 204.\n\nRoles: ADMIN apenas"},
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Reports",
-      "item": [
-        {
-          "name": "POST /reports",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('reportId', res.id);","        console.log('reportId salvo: ' + res.id);","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"sampleId\": \"{{sampleId}}\",\n  \"reportTemplateId\": \"{{reportTemplateId}}\",\n  \"responsavel\": \"Dr. Carlos Menezes\",\n  \"observacoes\": \"Coleta após evento de chuva\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/reports","host": ["{{base_url}}"],"path": ["api","v1","reports"]},
-            "description": "Cria um laudo em RASCUNHO. Items criados automaticamente a partir do modelo. ID salvo em {{reportId}}.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /reports",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/reports?page=1&pageSize=20","host": ["{{base_url}}"],"path": ["api","v1","reports"],"query": [{"key": "page","value": "1"},{"key": "pageSize","value": "20"},{"key": "status","value": "RASCUNHO","disabled": true},{"key": "sampleId","value": "{{sampleId}}","disabled": true}]},
-            "description": "Lista laudos com paginação. Filtros: status (RASCUNHO|EMITIDO|CANCELADO), sampleId.\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /reports/:id",
-          "request": {"method": "GET","url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},"description": "Retorna o laudo completo com items ordenados por ensaio.\n\nRoles: ADMIN, ANALYST, VIEWER"},
-          "response": []
-        },
-        {
-          "name": "PATCH /reports/:id — metadados",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"responsavel\": \"Dr. Paulo Lima\",\n  \"observacoes\": \"Revisado\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},
-            "description": "Edita metadados do laudo. Só permitido em RASCUNHO.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "PATCH /reports/:id/items/:assayId — resultado",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"valor\": \"7,2\",\n  \"valorNumerico\": 7.2,\n  \"observacoes\": \"Medido às 09:30\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/items/{{assayId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","items","{{assayId}}"]},
-            "description": "Registra resultado de um ensaio. Conformidade calculada automaticamente. Só em RASCUNHO.\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "PATCH /reports/:id/status — emitir",
-          "request": {
-            "method": "PATCH",
-            "header": [{"key": "Content-Type","value": "application/json"}],
-            "body": {"mode": "raw","raw": "{\n  \"status\": \"EMITIDO\"\n}","options": {"raw": {"language": "json"}}},
-            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/status","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","status"]},
-            "description": "Transita status do laudo.\nTransições válidas: RASCUNHO → EMITIDO | CANCELADO\nEMITIDO e CANCELADO são terminais → 422\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "DELETE /reports/:id",
-          "request": {"method": "DELETE","url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}"]},"description": "Soft delete. Bloqueado para laudos EMITIDOS (422). Retorna 204.\n\nRoles: ADMIN apenas"},
-          "response": []
-        },
-        {
-          "name": "POST /reports/:id/pdf — gerar PDF",
-          "event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 201) {","    const res = pm.response.json();","    if (res.id) {","        pm.collectionVariables.set('pdfArtifactId', res.id);","        pm.collectionVariables.set('pdfVersion', String(res.version));","        console.log('pdfArtifactId salvo: ' + res.id + ' (v' + res.version + ')');","    }","}"],"type": "text/javascript"}}],
-          "request": {
-            "method": "POST",
-            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","pdf"]},
-            "description": "Gera uma nova versão do PDF do laudo e envia ao storage externo. Só permitido para laudos EMITIDO.\n\nResposta 201 retorna o PdfArtifact criado (id, version, filename, size, createdAt, createdBy). O storagePath não é exposto.\n\nErros:\n- 409 — laudo não está EMITIDO\n- 404 — laudo de outro tenant ou inexistente\n- 502 — falha na Storage API\n\nRoles: ADMIN, ANALYST"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /reports/:id/pdf-artifacts — listar versões",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf-artifacts","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","pdf-artifacts"]},
-            "description": "Lista todas as versões de PDF geradas para o laudo, em ordem decrescente de versão.\n\nCada item: { id, version, filename, size, createdAt, createdBy: { id, name } }. Não expõe storagePath.\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        },
-        {
-          "name": "GET /reports/:id/pdf — baixar PDF",
-          "request": {
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf?inline=0","host": ["{{base_url}}"],"path": ["api","v1","reports","{{reportId}}","pdf"],"query": [{"key": "version","value": "{{pdfVersion}}","disabled": true,"description": "Versão específica. Omitido = última versão."},{"key": "inline","value": "0","description": "0 = attachment (download), 1 = inline (abre no browser)"}]},
-            "description": "Baixa o PDF do laudo via proxy do backend. Sem ?version retorna a última versão; com ?version=N retorna a versão específica. ?inline=1 troca o Content-Disposition para inline.\n\nResposta 200: application/pdf binário.\n\nErros:\n- 404 — laudo de outro tenant, sem PDFs gerados, ou versão inexistente\n- 502 — falha no download da Storage API\n\nRoles: ADMIN, ANALYST, VIEWER"
-          },
-          "response": []
-        }
-      ]
-    }
-  ]
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "MasterLabs API",
+		"description": "Collection completa da MasterLabs API — SaaS multi-tenant de laudos laboratoriais.\n\n**Como usar:**\n1. Selecione o environment desejado (Local / Stage / Prod)\n2. Execute **Auth > Register Tenant** ou **Auth > Login** — o token é salvo automaticamente\n3. A partir daí todos os endpoints autenticados funcionam sem configuração manual",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "token",
+			"value": "",
+			"type": "string",
+			"description": "JWT token — preenchido automaticamente pelo Login ou Register"
+		},
+		{
+			"key": "clientId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último cliente criado — preenchido automaticamente pelo POST /clients"
+		},
+		{
+			"key": "attendanceId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último atendimento criado — preenchido automaticamente pelo POST /attendances"
+		},
+		{
+			"key": "sampleId",
+			"value": "",
+			"type": "string",
+			"description": "ID da última amostra criada — preenchida automaticamente pelo POST /samples"
+		},
+		{
+			"key": "assayId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último ensaio criado — preenchido automaticamente pelo POST /assays"
+		},
+		{
+			"key": "reportTemplateId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último modelo de laudo criado — preenchido automaticamente pelo POST /report-templates"
+		},
+		{
+			"key": "reportId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último laudo criado — preenchido automaticamente pelo POST /reports"
+		},
+		{
+			"key": "pdfArtifactId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último PDF de laudo gerado — preenchido automaticamente pelo POST /reports/:id/pdf"
+		},
+		{
+			"key": "pdfVersion",
+			"value": "",
+			"type": "string",
+			"description": "Versão do último PDF de laudo gerado — preenchida automaticamente pelo POST /reports/:id/pdf"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string",
+			"description": "ID do último usuário criado — preenchido pelo POST /users"
+		},
+		{
+			"key": "portalToken",
+			"value": "",
+			"type": "string",
+			"description": "Token do portal do cliente — preenchido pelo POST /portal/auth/verify"
+		}
+	],
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "GET /healthz",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/healthz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"healthz"
+							]
+						},
+						"description": "Healthcheck geral da API. Retorna 200 se o servidor está up."
+					},
+					"response": []
+				},
+				{
+					"name": "GET /healthz/db",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/healthz/db",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"healthz",
+								"db"
+							]
+						},
+						"description": "Healthcheck do banco MySQL. Retorna 200 se a conexão está ativa."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tenants",
+			"item": [
+				{
+					"name": "POST /tenants/register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.token) {",
+									"        pm.collectionVariables.set('token', res.token);",
+									"        console.log('Token salvo automaticamente');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"razaoSocial\": \"Laboratório Exemplo S/A\",\n  \"nomeFantasia\": \"Lab Exemplo\",\n  \"cnpj\": \"12345678000195\",\n  \"email\": \"lab@exemplo.com\",\n  \"telefone\": \"11999990000\",\n  \"endereco\": \"Rua das Flores, 123, São Paulo - SP\",\n  \"adminName\": \"Administrador\",\n  \"adminEmail\": \"admin@exemplo.com\",\n  \"adminPassword\": \"senha1234\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tenants/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenants",
+								"register"
+							]
+						},
+						"description": "Cadastra um novo laboratório (tenant) e cria o primeiro usuário ADMIN. Retorna o token JWT automaticamente salvo na collection."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "POST /auth/login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const res = pm.response.json();",
+									"    if (res.token) {",
+									"        pm.collectionVariables.set('token', res.token);",
+									"        console.log('Token salvo automaticamente');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@exemplo.com\",\n  \"password\": \"senha1234\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Autentica um usuário do laboratório. O token JWT é salvo automaticamente na collection."
+					},
+					"response": []
+				},
+				{
+					"name": "GET /auth/me",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Retorna os dados do usuário autenticado a partir do JWT."
+					},
+					"response": []
+				},
+				{
+					"name": "POST /auth/login — com cnpj (multi-tenant)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@exemplo.com\",\n  \"password\": \"senha1234\",\n  \"cnpj\": \"12345678000195\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('token', pm.response.json().token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "POST /clients — PF",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('clientId', res.id);",
+									"        console.log('clientId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipoPessoa\": \"PF\",\n  \"nome\": \"João da Silva\",\n  \"documento\": \"12345678901\",\n  \"email\": \"joao@email.com\",\n  \"telefone\": \"11999990000\",\n  \"endereco\": \"Rua das Flores, 123, São Paulo - SP\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients"
+							]
+						},
+						"description": "Cria um cliente Pessoa Física (CPF = 11 dígitos). O ID é salvo automaticamente em {{clientId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "POST /clients — PJ",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('clientId', res.id);",
+									"        console.log('clientId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipoPessoa\": \"PJ\",\n  \"nome\": \"Empresa Exemplo LTDA\",\n  \"documento\": \"12345678000195\",\n  \"email\": \"empresa@exemplo.com\",\n  \"telefone\": \"1133330000\",\n  \"endereco\": \"Av. Paulista, 1000, São Paulo - SP\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients"
+							]
+						},
+						"description": "Cria um cliente Pessoa Jurídica (CNPJ = 14 dígitos). O ID é salvo automaticamente em {{clientId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /clients",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "tipoPessoa",
+									"value": "PF",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "João",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista clientes do laboratório com paginação. Suporta filtro por tipoPessoa e busca por nome/documento.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /clients/:id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients/{{clientId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"{{clientId}}"
+							]
+						},
+						"description": "Retorna os detalhes de um cliente pelo ID.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /clients/:id",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"João da Silva Santos\",\n  \"email\": \"joao.novo@email.com\",\n  \"telefone\": \"11988880000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients/{{clientId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"{{clientId}}"
+							]
+						},
+						"description": "Atualiza parcialmente um cliente. Apenas os campos enviados são alterados.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE /clients/:id",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients/{{clientId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"{{clientId}}"
+							]
+						},
+						"description": "Soft delete do cliente — marca como inativo sem remover do banco. Retorna 204.\n\nRoles: ADMIN apenas"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /clients/export.csv",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/clients/export.csv",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"export.csv"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Attendances",
+			"item": [
+				{
+					"name": "POST /attendances",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('attendanceId', res.id);",
+									"        console.log('attendanceId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clientId\": \"{{clientId}}\",\n  \"tipoColeta\": \"IN_LOCO\",\n  \"descricao\": \"Análise de qualidade da água para fins de consumo humano\",\n  \"dataSolicitacao\": \"2026-05-02T09:00:00.000Z\",\n  \"prazoEntrega\": \"2026-05-10T18:00:00.000Z\",\n  \"responsavel\": \"Dr. Carlos Menezes\",\n  \"observacoes\": \"Urgência nos laudos de coliformes\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendances",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendances"
+							]
+						},
+						"description": "Cria um atendimento (ordem de serviço). Número de protocolo gerado automaticamente. ID salvo em {{attendanceId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /attendances",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendances?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendances"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "ABERTO",
+									"disabled": true
+								},
+								{
+									"key": "tipoColeta",
+									"value": "IN_LOCO",
+									"disabled": true
+								},
+								{
+									"key": "clientId",
+									"value": "{{clientId}}",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista atendimentos com paginação. Filtros: status, tipoColeta, clientId, search.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /attendances/:id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendances",
+								"{{attendanceId}}"
+							]
+						},
+						"description": "Retorna os detalhes de um atendimento.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /attendances/:id",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"responsavel\": \"Dr. Paulo Lima\",\n  \"observacoes\": \"Prazo antecipado pelo cliente\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendances",
+								"{{attendanceId}}"
+							]
+						},
+						"description": "Atualiza campos do atendimento parcialmente. Status e número de protocolo são imutáveis aqui.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /attendances/:id/status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"EM_ANDAMENTO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendances",
+								"{{attendanceId}}",
+								"status"
+							]
+						},
+						"description": "Transita o status do atendimento.\nTransições válidas:\n- ABERTO → EM_ANDAMENTO | CANCELADO\n- EM_ANDAMENTO → ENCERRADO | CANCELADO\n- ENCERRADO e CANCELADO são terminais → retorna 422\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE /attendances/:id",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendances/{{attendanceId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendances",
+								"{{attendanceId}}"
+							]
+						},
+						"description": "Soft delete do atendimento. Retorna 204.\n\nRoles: ADMIN apenas"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Samples",
+			"item": [
+				{
+					"name": "POST /samples",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('sampleId', res.id);",
+									"        console.log('sampleId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"attendanceId\": \"{{attendanceId}}\",\n  \"descricao\": \"Amostra de água superficial\",\n  \"dataColeta\": \"2026-05-01T08:00:00.000Z\",\n  \"dataRecebimento\": \"2026-05-02T09:30:00.000Z\",\n  \"amostrador\": \"Carlos Souza\",\n  \"etiqueta\": \"RIO-001-A\",\n  \"motivo\": \"Monitoramento mensal\",\n  \"temperaturaAmostra\": 18.5,\n  \"temperaturaAmbiente\": 24.0,\n  \"umidadeRelativa\": 72.3,\n  \"pontoColeta\": \"Rio Tietê — km 42\",\n  \"observacoes\": \"Coleta realizada após chuva intensa\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/samples",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"samples"
+							]
+						},
+						"description": "Registra uma amostra vinculada a um atendimento. Número sequencial gerado automaticamente. ID salvo em {{sampleId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /samples",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/samples?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"samples"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "attendanceId",
+									"value": "{{attendanceId}}",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "RECEBIDA",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista amostras com paginação. Filtros: attendanceId, status, search (numeroAmostra, descricao, pontoColeta).\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /samples/:id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/samples/{{sampleId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"samples",
+								"{{sampleId}}"
+							]
+						},
+						"description": "Retorna os detalhes completos de uma amostra.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /samples/:id",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amostrador\": \"Paulo Lima\",\n  \"temperaturaAmostra\": 19.2,\n  \"observacoes\": \"Revisado após nova medição\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/samples/{{sampleId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"samples",
+								"{{sampleId}}"
+							]
+						},
+						"description": "Atualiza campos da amostra parcialmente. Status e número são imutáveis aqui.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /samples/:id/status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"EM_ANALISE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/samples/{{sampleId}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"samples",
+								"{{sampleId}}",
+								"status"
+							]
+						},
+						"description": "Transita o status da amostra.\nTransições válidas:\n- RECEBIDA → EM_ANALISE | CANCELADA | REJEITADA\n- EM_ANALISE → CONCLUIDA | CANCELADA | REJEITADA\n- CONCLUIDA, CANCELADA e REJEITADA são terminais → retorna 422\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE /samples/:id",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/api/v1/samples/{{sampleId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"samples",
+								"{{sampleId}}"
+							]
+						},
+						"description": "Soft delete da amostra. Retorna 204.\n\nRoles: ADMIN apenas"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Assays",
+			"item": [
+				{
+					"name": "POST /assays — ENTRE",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('assayId', res.id);",
+									"        console.log('assayId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"pH da Água\",\n  \"unidade\": \"unidade de pH\",\n  \"descricao\": \"Determinação do pH por eletrometria\",\n  \"metodoAnalitico\": \"ABNT NBR 9898\",\n  \"tipoComparacao\": \"ENTRE\",\n  \"limiteMinimo\": 6.0,\n  \"limiteMaximo\": 9.5,\n  \"valorReferencia\": \"6,0 a 9,5\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/assays",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assays"
+							]
+						},
+						"description": "Cria um ensaio com faixa numérica (entre mínimo e máximo). ID salvo em {{assayId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "POST /assays — TEXTO",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('assayId', res.id);",
+									"        console.log('assayId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Coliformes Totais\",\n  \"unidade\": \"UFC/100mL\",\n  \"metodoAnalitico\": \"SMEWW 9221 B\",\n  \"tipoComparacao\": \"TEXTO\",\n  \"valorReferencia\": \"Ausência em 100mL\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/assays",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assays"
+							]
+						},
+						"description": "Cria um ensaio com referência textual (sem comparação numérica). ID salvo em {{assayId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /assays",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/assays?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assays"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "search",
+									"value": "pH",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista ensaios do catálogo com paginação. Suporta filtro por search (nome).\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /assays/:id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/assays/{{assayId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assays",
+								"{{assayId}}"
+							]
+						},
+						"description": "Retorna os detalhes completos de um ensaio.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /assays/:id",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"metodoAnalitico\": \"EPA 150.1\",\n  \"limiteMaximo\": 9.0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/assays/{{assayId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assays",
+								"{{assayId}}"
+							]
+						},
+						"description": "Atualiza parcialmente um ensaio do catálogo.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE /assays/:id",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/api/v1/assays/{{assayId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assays",
+								"{{assayId}}"
+							]
+						},
+						"description": "Soft delete do ensaio — remove do catálogo ativo sem apagar histórico. Retorna 204.\n\nRoles: ADMIN apenas"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report Templates",
+			"item": [
+				{
+					"name": "POST /report-templates",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('reportTemplateId', res.id);",
+									"        console.log('reportTemplateId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Laudo Físico-Químico de Água\",\n  \"descricao\": \"Análises físico-químicas para água de consumo humano (Portaria 888/2021)\",\n  \"assayIds\": [\n    \"{{assayId}}\"\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/report-templates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"report-templates"
+							]
+						},
+						"description": "Cria um modelo de laudo com lista ordenada de ensaios. A posição no array define a ordem de exibição no PDF. ID salvo em {{reportTemplateId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /report-templates",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/report-templates?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"report-templates"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "search",
+									"value": "Físico",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista modelos de laudo com paginação. Inclui assayCount por modelo. Filtro por search (nome).\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /report-templates/:id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"report-templates",
+								"{{reportTemplateId}}"
+							]
+						},
+						"description": "Retorna o modelo completo com array de ensaios ordenados (ordem, assay com todos os campos).\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /report-templates/:id",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"descricao\": \"Atualizado conforme Portaria 888/2021\",\n  \"assayIds\": [\n    \"{{assayId}}\"\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"report-templates",
+								"{{reportTemplateId}}"
+							]
+						},
+						"description": "Atualiza nome/descrição e/ou substitui a lista completa de ensaios atomicamente.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE /report-templates/:id",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/api/v1/report-templates/{{reportTemplateId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"report-templates",
+								"{{reportTemplateId}}"
+							]
+						},
+						"description": "Soft delete do modelo — remove do catálogo ativo. Retorna 204.\n\nRoles: ADMIN apenas"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "POST /reports",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('reportId', res.id);",
+									"        console.log('reportId salvo: ' + res.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sampleId\": \"{{sampleId}}\",\n  \"reportTemplateId\": \"{{reportTemplateId}}\",\n  \"responsavel\": \"Dr. Carlos Menezes\",\n  \"observacoes\": \"Coleta após evento de chuva\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports"
+							]
+						},
+						"description": "Cria um laudo em RASCUNHO. Items criados automaticamente a partir do modelo. ID salvo em {{reportId}}.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /reports",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "RASCUNHO",
+									"disabled": true
+								},
+								{
+									"key": "sampleId",
+									"value": "{{sampleId}}",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista laudos com paginação. Filtros: status (RASCUNHO|EMITIDO|CANCELADO), sampleId.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /reports/:id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}"
+							]
+						},
+						"description": "Retorna o laudo completo com items ordenados por ensaio.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /reports/:id — metadados",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"responsavel\": \"Dr. Paulo Lima\",\n  \"observacoes\": \"Revisado\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}"
+							]
+						},
+						"description": "Edita metadados do laudo. Só permitido em RASCUNHO.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /reports/:id/items/:assayId — resultado",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"valor\": \"7,2\",\n  \"valorNumerico\": 7.2,\n  \"observacoes\": \"Medido às 09:30\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}/items/{{assayId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}",
+								"items",
+								"{{assayId}}"
+							]
+						},
+						"description": "Registra resultado de um ensaio. Conformidade calculada automaticamente. Só em RASCUNHO.\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH /reports/:id/status — emitir",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"EMITIDO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}",
+								"status"
+							]
+						},
+						"description": "Transita status do laudo.\nTransições válidas: RASCUNHO → EMITIDO | CANCELADO\nEMITIDO e CANCELADO são terminais → 422\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE /reports/:id",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}"
+							]
+						},
+						"description": "Soft delete. Bloqueado para laudos EMITIDOS (422). Retorna 204.\n\nRoles: ADMIN apenas"
+					},
+					"response": []
+				},
+				{
+					"name": "POST /reports/:id/pdf — gerar PDF",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const res = pm.response.json();",
+									"    if (res.id) {",
+									"        pm.collectionVariables.set('pdfArtifactId', res.id);",
+									"        pm.collectionVariables.set('pdfVersion', String(res.version));",
+									"        console.log('pdfArtifactId salvo: ' + res.id + ' (v' + res.version + ')');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}",
+								"pdf"
+							]
+						},
+						"description": "Gera uma nova versão do PDF do laudo e envia ao storage externo. Só permitido para laudos EMITIDO.\n\nResposta 201 retorna o PdfArtifact criado (id, version, filename, size, createdAt, createdBy). O storagePath não é exposto.\n\nErros:\n- 409 — laudo não está EMITIDO\n- 404 — laudo de outro tenant ou inexistente\n- 502 — falha na Storage API\n\nRoles: ADMIN, ANALYST"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /reports/:id/pdf-artifacts — listar versões",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf-artifacts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}",
+								"pdf-artifacts"
+							]
+						},
+						"description": "Lista todas as versões de PDF geradas para o laudo, em ordem decrescente de versão.\n\nCada item: { id, version, filename, size, createdAt, createdBy: { id, name } }. Não expõe storagePath.\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /reports/:id/pdf — baixar PDF",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/{{reportId}}/pdf?inline=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"{{reportId}}",
+								"pdf"
+							],
+							"query": [
+								{
+									"key": "version",
+									"value": "{{pdfVersion}}",
+									"disabled": true,
+									"description": "Versão específica. Omitido = última versão."
+								},
+								{
+									"key": "inline",
+									"value": "0",
+									"description": "0 = attachment (download), 1 = inline (abre no browser)"
+								}
+							]
+						},
+						"description": "Baixa o PDF do laudo via proxy do backend. Sem ?version retorna a última versão; com ?version=N retorna a versão específica. ?inline=1 troca o Content-Disposition para inline.\n\nResposta 200: application/pdf binário.\n\nErros:\n- 404 — laudo de outro tenant, sem PDFs gerados, ou versão inexistente\n- 502 — falha no download da Storage API\n\nRoles: ADMIN, ANALYST, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "GET /reports/export.csv",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reports/export.csv",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"export.csv"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "POST /users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ana Analista\",\n  \"email\": \"ana@exemplo.com\",\n  \"password\": \"senha1234\",\n  \"role\": \"ANALYST\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    pm.collectionVariables.set('userId', pm.response.json().id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "GET /users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /users/:id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{userId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{userId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "PATCH /users/:id",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{userId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ana Editada\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "DELETE /users/:id (desativa)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{userId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{userId}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Portal do Cliente",
+			"item": [
+				{
+					"name": "POST /portal/auth/request-code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/portal/auth/request-code",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"portal",
+								"auth",
+								"request-code"
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"cliente@exemplo.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "POST /portal/auth/verify",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/portal/auth/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"portal",
+								"auth",
+								"verify"
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"cliente@exemplo.com\",\n  \"code\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('portalToken', pm.response.json().token);",
+									"    console.log('Token do portal salvo automaticamente');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "GET /portal/me",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/portal/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"portal",
+								"me"
+							]
+						},
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{portalToken}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /portal/reports",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/portal/reports",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"portal",
+								"reports"
+							]
+						},
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{portalToken}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /portal/reports/:id/pdf",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/portal/reports/{{reportId}}/pdf",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"portal",
+								"reports",
+								"{{reportId}}",
+								"pdf"
+							]
+						},
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{portalToken}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Stats",
+			"item": [
+				{
+					"name": "GET /stats/overview",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stats/overview",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stats",
+								"overview"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Audit",
+			"item": [
+				{
+					"name": "GET /audit-logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit-logs?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"audit-logs"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	]
 }

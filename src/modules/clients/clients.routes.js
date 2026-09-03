@@ -11,6 +11,7 @@ router.use(authenticate);
 
 router.post(  '/',    authorize('ADMIN', 'ANALYST'), validate(createClientSchema), ctrl.create);
 router.get(   '/',                                                                  ctrl.list);
+router.get(   '/export.csv',                                                        ctrl.exportCsv);
 router.get(   '/:id',                                                               ctrl.getById);
 router.patch( '/:id', authorize('ADMIN', 'ANALYST'), validate(updateClientSchema), ctrl.update);
 router.delete('/:id', authorize('ADMIN'),                                           ctrl.remove);

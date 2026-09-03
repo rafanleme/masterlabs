@@ -15,6 +15,7 @@ router.use(authenticate);
 
 router.post(  '/',                        authorize('ADMIN', 'ANALYST'), validate(createReportSchema),     ctrl.create);
 router.get(   '/',                                                                                          ctrl.list);
+router.get(   '/export.csv',                                                                                ctrl.exportCsv);
 router.get(   '/:id',                                                                                       ctrl.getById);
 router.patch( '/:id',                     authorize('ADMIN', 'ANALYST'), validate(updateReportSchema),     ctrl.update);
 router.patch( '/:id/items/:assayId',      authorize('ADMIN', 'ANALYST'), validate(updateReportItemSchema), ctrl.updateItem);

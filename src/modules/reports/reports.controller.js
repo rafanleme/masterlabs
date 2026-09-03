@@ -51,4 +51,15 @@ async function remove(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, list, getById, update, updateItem, updateStatus, remove };
+async function exportCsv(req, res, next) {
+  try {
+    const csv = await service.exportReportsCsv(req.user.tenantId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="laudos.csv"');
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list, getById, update, updateItem, updateStatus, remove, exportCsv };
