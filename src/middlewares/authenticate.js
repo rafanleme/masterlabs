@@ -17,6 +17,14 @@ module.exports = function authenticate(req, res, next) {
 
   try {
     const payload = jwt.verify(token, config.jwt.secret);
+    // Tokens do portal do cliente (scope 'portal') não valem para rotas internas
+    if (payload.scope === 'portal' || !payload.userId) {
+      return res.status(401).json({
+        type: 'https://httpstatuses.com/401',
+        title: 'Unauthorized',
+        status: 401,
+      });
+    }
     req.user = {
       userId: payload.userId,
       tenantId: payload.tenantId,
