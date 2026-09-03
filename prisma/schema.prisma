@@ -34,6 +34,7 @@ model User {
   email        String
   passwordHash String
   role         Role          @default(ANALYST)
+  active       Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
@@ -69,6 +70,7 @@ model Client {
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   attendances Attendance[]
   samples     Sample[]
+  accessCodes ClientAccessCode[]
 
   @@unique([tenantId, documento])
   @@index([tenantId])
@@ -288,4 +290,41 @@ model PdfArtifact {
   @@unique([reportId, version])
   @@index([tenantId])
   @@index([reportId])
+}
+
+model ClientAccessCode {
+  id         String    @id @default(cuid())
+  tenantId   String
+  clientId   String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+  client     Client    @relation(fields: [clientId], references: [id])
+
+  @@index([clientId, createdAt])
+  @@index([tenantId])
+}
+
+enum AuditActorType {
+  USER
+  PORTAL_CLIENT
+  ANONYMOUS
+}
+
+model AuditLog {
+  id            String         @id @default(cuid())
+  tenantId      String?
+  actorType     AuditActorType
+  actorId       String?
+  method        String         @db.VarChar(10)
+  path          String         @db.VarChar(500)
+  statusCode    Int
+  ip            String?        @db.VarChar(64)
+  correlationId String?        @db.VarChar(64)
+  createdAt     DateTime       @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([createdAt])
 }

@@ -8,5 +8,6 @@ module.exports = function errorHandler(err, req, res, next) {
     detail: err.detail || undefined,
     instance: req.originalUrl,
     correlationId: req.correlationId,
+    ...(err.payload || {}),
   });
 };
