@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `active` BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE `User` ADD COLUMN `active` BOOLEAN NOT NULL DEFAULT true;
 
 -- CreateTable
 CREATE TABLE `ClientAccessCode` (
